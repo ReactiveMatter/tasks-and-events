@@ -727,6 +727,7 @@ function addTask()
   tasks.mtime = new Date().getTime();
   showTasks();
   renderTasks();
+  renderToday(todayFilter);
   saveToLocalByFile('tasks');
   clearAddTaskForm();
 }
@@ -1201,6 +1202,8 @@ function deleteCompletedEvents()
 
 function parseToday()
 {
+  tasksToday = [];
+  eventsToday = [];
   let todayDate = new Date().toISOString().substr(0,10);
   
   for (var i = 0; i < tasks.tasks.length; i++) {
@@ -1221,7 +1224,8 @@ function parseToday()
 function renderToday(arg)
 {
   todayFilter = arg;
-
+  parseToday();
+  
   let code=``;
 
   if(arg=='all')
