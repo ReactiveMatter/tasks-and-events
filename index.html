@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+<div id="col-one" class="column">
+<div id="module-tasks" class="module">
+  <div class="module-header">
+  <h1 class="header">Tasks</h1>
+  <div>
+      <!-- <button onclick="showCompletedTasks()" class='selected'>Completed</button> -->
+      <button onclick="addTaskOpen()">Add</button>
+  </div>
+  </div>
+        <label for='sort-tasks'>Sort</label>
+        <select name="sort-tasks" id="sort-tasks">
+        <option value="None">None</option>
+        <option value="priority">Priority</option>
+        <option value="date">Date</option>
+        </select>
+        <label for='group-tasks'>Group</label>
+        <select name="group-tasks" id="group-tasks">
+        <option value="none">None</option>
+        <option value="priority">Priority</option>
+        <option value="date">Date</option>
+        </select>
+    <div id="tasks-container">
+    </div>
+</div>
+<div id="module-completed-tasks" class="module" style="display: none;">
+  <div class="module-header">
+  <h1 class="header">Completed tasks</h1>
+  <div>
+      <!-- <button onclick="showCompletedTasks()" class='selected'>Completed</button> -->
+      <button onclick="deleteCompletedTasks()">Delete all</button>
+  </div>
+  </div>
+
+    <div id="completed-tasks-container">
+    </div>
+</div>
+<div id="module-add-tasks" class="module" style="display: none;">
+  <div class="module-header">
+    <h1 class="header">Add task</h1>
+    <button onclick="showTasks()">Close</button>
+  </div>
+  <label for="form-task-title">Title</label>
+  <input type="text" name="form-task-title" id="form-task-title" autocomplete="off"></input>
+  <label for="form-task-content">Content</label>
+  <textarea name="form-task-content" id="form-task-content"></textarea>
+  <input type="checkbox" name="form-task-priority" id="form-task-priority"></input>
+  <label for="form-task-prority">Top priority</label>
+  <div style="height:10px"></div>
+  <label for="form-task-date">Date</label>
+  <input type="date" name="form-task-date" id="form-task-date"></input>
+  <label for="form-task-time">Time</label>
+  <input type="time" name="form-task-time" id="form-task-time"></input>
+  <label for="form-task-percentage" >Completion percentage</label>
+  <input type="number" name="form-task-percentage" id="form-task-percentage"></input>
+  <input type="checkbox" name="form-task-completed" id="form-task-completed"></input>
+  <label for="form-task-completed">Completed</label>
+  <div style="height:10px"></div>
+  <button onclick="addTask()">Add</button>
+</div>
+<div id="module-edit-tasks" class="module" style="display: none;">
+  <div class="module-header">
+    <h1 class="header">Edit task</h1>
+    <button onclick="showTasks()">Close</button>
+  </div>
+  <input type="hidden" name="form-task-edit-id" id="form-task-edit-id"></input>
+  <label for="form-task-edit-title">Title</label>
+  <input type="text" name="form-task-edit-title" id="form-task-edit-title" autocomplete="off"></input>
+  <label for="form-task-edit-content">Content</label>
+  <textarea name="form-task-edit-content" id="form-task-edit-content"></textarea>
+  <input type="checkbox" name="form-task-edit-priority" id="form-task-edit-priority"></input>
+  <label for="form-task-edit-prority">Top priority</label>
+  <div style="height:10px"></div>
+  <label for="form-task-edit-date">Date</label>
+  <input type="date" name="form-task-edit-date" id="form-task-edit-date"></input>
+  <label for="form-task-edit-time">Time</label>
+  <input type="time" name="form-task-edit-time" id="form-task-edit-time"></input>
+  <label for="form-task-edit-percentage" >Completion percentage</label>
+  <input type="number" name="form-task-edit-percentage" id="form-task-edit-percentage"></input>
+  <input type="checkbox" name="form-task-edit-completed" id="form-task-edit-completed"></input>
+  <label for="form-task-edit-completed">Completed</label>
+  <div style="height:10px"></div>
+  <button onclick="updateTask()">Update</button>
+</div>
+</div>
+<div id="col-two" class="column">
+  <div id="module-events" class="module">
+  <div class="module-header">
+  <h1 class="header">Events</h1>
+  <div>
+        <button onclick="addEventOpen()">Add</button>
+  </div>
+  </div>
+    <div id="events-container">
+    </div>
+</div>
+<div id="module-add-events" class="module" style="display: none;">
+  <div class="module-header">
+    <h1 class="header">Add event</h1>
+    <button onclick="showEvents()">Close</button>
+  </div>
+  <label for="form-event-title">Title</label>
+  <input type="text" name="form-event-title" id="form-event-title" autocomplete="off"></input>
+  <label for="form-event-venue">Venue</label>
+  <input type="text" name="form-event-venue" id="form-event-venue"></input>
+  <label for="form-event-content">Content</label>
+  <textarea name="form-event-content" id="form-event-content"></textarea>
+  <div style="height:10px"></div>
+  <label for="form-event-date">Date</label>
+  <input type="date" name="form-event-date" id="form-event-date"></input>
+  <label for="form-event-time">Time</label>
+  <input type="time" name="form-event-time" id="form-event-time"></input>
+  <div style="height:10px"></div>
+  <button onclick="addEvent()">Add</button>
+</div>
+<div id="module-edit-events" class="module" style="display: none;">
+  <div class="module-header">
+    <h1 class="header">Edit event</h1>
+    <button onclick="showEvents()">Close</button>
+  </div>
+  <input type="hidden" name="form-event-edit-id" id="form-event-edit-id"></input>
+  <label for="form-event-edit-title">Title</label>
+  <input type="text" name="form-event-edit-title" id="form-event-edit-title" autocomplete="off"></input>
+  <label for="form-event-edit-venue">Venue</label>
+  <input type="text" name="form-event-edit-venue" id="form-event-edit-venue"></input>
+  <label for="form-event-edit-content">Content</label>
+  <textarea name="form-event-edit-content" id="form-event-edit-content"></textarea>
+  <div style="height:10px"></div>
+  <label for="form-event-edit-date">Date</label>
+  <input type="date" name="form-event-edit-date" id="form-event-edit-date"></input>
+  <label for="form-event-edit-time">Time</label>
+  <input type="time" name="form-event-edit-time" id="form-event-edit-time"></input>
+
+  <div style="height:10px"></div>
+  <button onclick="updateEvent()">Update</button>
+</div>
+<div id="module-completed-events" class="module" style="display: none;">
+  <div class="module-header">
+  <h1 class="header">Completed events</h1>
+  <div>
+      <!-- <button onclick="showCompletedTasks()" class='selected'>Completed</button> -->
+      <button onclick="deleteCompletedEvents()">Delete all</button>
+  </div>
+  </div>
+
+    <div id="completed-events-container">
+    </div>
+</div>
+</div>
+<div id="col-three" class="column">
+    <div id="module-today" class="module">
+    <div class="module-header">
+      <h1 class="header">Today</h1>
+      <div>
+        <button onclick="renderToday('all')">All</button>
+        <button onclick="renderToday('tasks')">Tasks</button>
+        <button onclick="renderToday('events')">Events</button>
+      </div>
+    </div>
+    <div id="today-container">
+    <div id="tasks-today">
+    </div>
+        <div id="events-today">
+    </div>
+    </div>
+  </div>
+    <div id="module-calendar" class="module">
+    <div class="module-header">
+      <h1 id="month-year" class="header"></h1>
+      <div>
+        <button onclick="prevMonth()">Prev</button>
+        <button onclick="today()">Today</button>
+        <button onclick="nextMonth()">Next</button>
+      </div>
+    </div>
+    <table class="calendar">
+      <thead>
+        <tr>
+          <th>Sun</th>
+          <th>Mon</th>
+          <th>Tue</th>
+          <th>Wed</th>
+          <th>Thu</th>
+          <th>Fri</th>
+          <th>Sat</th>
+        </tr>
+      </thead>
+      <tbody id="calendar-body">
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+<div class="app-bar-bottom">
+<div class="bar-section">
+<img src="icons/refresh-cw.svg" class="icon" onclick="sync()" style="width:16px; margin-right: 5px;" title="Sync" id="sync-icon">
+<span class="button" onclick="toggleCompleted()">Completed</span>
+<span class="button" onclick="openSettings()">Settings</span>
+<span class="button" onclick="openPassword()">Password</span>
+</div>
+<div class="bar-section">
+<span id="app-username"></span>
+</div>
+</div>
+</div>
+<dialog id="settings-dialog">
+<img src="icons/x.svg" class="icon close" onclick="closeDialog('settings-dialog')">
+<div class="dialog-heading">
+Settings
+</div>
+<div class="dialog-content">
+  <label>Username</label>
+  <input type="text" name="username" id="username" autocomplete="off"></input>
+  <button onclick="saveSettings()">Save</button>
+</div>
+</dialog>
+<dialog id="password-dialog">
+<img src="icons/x.svg" class="icon close" onclick="closeDialog('password-dialog')">
+<div class="dialog-heading">
+Password
+</div>
+<div class="dialog-content">
+  <label>Password</label>
+  <input type="text" name="password" id="password" autocomplete="off"></input>
+  <button onclick="savePassword()">Save</button>
+</div>
+</dialog>
+  <script type="text/javascript" src="library.js">
+  </script>
+</body>
+</html>
