@@ -60,6 +60,7 @@ var password = null;
 var localstorage_prefix = 'app_';
 var error = null;
 var todayFilter = 'all';
+var sortTasks = 'none';
 var tasksToday = [];
 var eventsToday= [];
 
@@ -69,6 +70,13 @@ document.addEventListener("DOMContentLoaded", (event) => {
   {
     sync();
   }
+
+  document.getElementById('sort-tasks').addEventListener("change", function(){
+    sortTasks = document.getElementById('sort-tasks').value;
+    localStorage.setItem(localstorage_prefix+'sort', sortTasks);
+    renderTasks();
+  });
+
 });
 
 
@@ -111,6 +119,13 @@ function initialize()
   if(p)
   {
     password = p;
+  }
+
+  let s = localStorage.getItem(localstorage_prefix+'sort');
+  if(s)
+  {
+    sortTasks = s;
+    document.getElementById('sort-tasks').value = sortTasks;
   }
 
   if(conf.username)
@@ -564,6 +579,23 @@ function humanReadableDate(timestamp)
     return months[monthIndex];
   }
 
+function compareTime(time1, time2) {
+  const [hours1, minutes1, period1] = time1.split(/:| /);
+  const [hours2, minutes2, period2] = time2.split(/:| /);
+  
+  const totalMinutes1 = parseInt(hours1) * 60 + parseInt(minutes1) + (period1 === 'PM' ? 12 * 60 : 0);
+  const totalMinutes2 = parseInt(hours2) * 60 + parseInt(minutes2) + (period2 === 'PM' ? 12 * 60 : 0);
+  
+  if (totalMinutes1 < totalMinutes2) {
+    return -1;
+  } else if (totalMinutes1 > totalMinutes2) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
 function closeDialog(id)
 {
   document.getElementById(id).close();
@@ -642,25 +674,29 @@ function generateTaskHTML(task)
 
   let code=`
   <div class="task" data-id="`+task.id+`">
+   <div class='task-head'>
    <div class="title" onclick="toggleTaskDetails('`+task.id+`')">`+task.title+`</div>
    <div class="task-options">`;
 
    if(task.topPriority)
    {
-    code+=`<span class="priority">Top priority</span>`;
+    code+=`<span class="priority">Top</span>`;
+    // code+= `<img src="icons/shield.svg" class='icon'>`;
    }
+
 
   if(task.dueDate)
   {
-    code+=`<img src="icons/calendar.svg" class="icon" title="Due on `+formatDate(task.dueDate)+`">`;
+    code+=`<span class="task-date">`+formatDate(task.dueDate)+`</span>`;
   }
   code+=`<img src="icons/check.svg" onclick="completeTask('`+task.id+`')" class="icon" title="Mark this task as complete">
+   </div>
    </div>
    <div class="task-details" style="display:none;">`;
 
    if(task.content)
    {
-    code+=`<div class="task-content">`+task.content+`</div>`;
+    code+=`<div class="task-content">`+markdownToHtml(task.content)+`</div>`;
    }
 
    if(task.dueDate)
@@ -785,6 +821,7 @@ function overwriteTask(id, task)
     // console.log("Comparing "+id+" with "+ta)
     if(tasks.tasks[i].id == id)
     {
+      task.creationTime = tasks.tasks[i].creationTime;
       tasks.tasks[i] = task;
     }
   }
@@ -823,11 +860,107 @@ function completeTask(id)
   renderToday(todayFilter);
 }
 
+function sortTasksByDate(t)
+{
+  t.sort(function(a,b){
+
+      if(a.dueDate && b.dueDate)
+      {
+        return a.dueDate.localeCompare(b.dueDate);
+      }
+      else if (!a.dueDate && b.dueDate)
+      {
+        return 1;
+      }
+      else if (a.dueDate && !b.dueDate)
+      {
+        return -1;
+      }
+
+      return 0;
+    });
+
+  return t;
+}
+
+
+function getTopPriorityTasks(t)
+{
+  let r=[]
+  for (var i = 0; i < t.length; i++) {
+    if(t[i].topPriority)
+    {
+      r.push(t[i]);
+    }
+    
+  }
+
+  return r;
+}
+
+function getNormalPriorityTasks(t)
+{
+  let r=[]
+  for (var i = 0; i < t.length; i++) {
+    if(!t[i].topPriority)
+    {
+      r.push(t[i]);
+    }
+    
+  }
+
+  return r;
+}
+
 function renderTasks()
 { 
   let code = ``;
   let completed = ``;
-  for (var i = 0; i < tasks.tasks.length; i++) {
+  let t = Array.from(tasks.tasks);
+
+  if(sortTasks=='date')
+  {   
+    let dueDateSortedTasks = sortTasksByDate(t);
+     for (var i = 0; i < dueDateSortedTasks.length; i++) {
+    if(!dueDateSortedTasks[i].completed)
+    {
+      code+=generateTaskHTML(dueDateSortedTasks[i]);
+    }
+    else
+    {
+      completed+=generateTaskHTML(dueDateSortedTasks[i]);
+    }
+    }
+  }
+  else if(sortTasks=='priority')
+  {
+    topPriorityTasks = getTopPriorityTasks(t);
+    normalPriorityTasks = getNormalPriorityTasks(t);
+    for (var i = 0; i < topPriorityTasks.length; i++) {
+    if(!topPriorityTasks[i].completed)
+    {
+      code+=generateTaskHTML(topPriorityTasks[i]);
+    }
+    else
+    {
+      completed+=generateTaskHTML(topPriorityTasks[i]);
+    }
+    }
+
+    for (var i = 0; i < normalPriorityTasks.length; i++) {
+    if(!normalPriorityTasks[i].completed)
+    {
+      code+=generateTaskHTML(normalPriorityTasks[i]);
+    }
+    else
+    {
+      completed+=generateTaskHTML(normalPriorityTasks[i]);
+    }
+    }
+  }
+  else
+  {
+    for (var i = 0; i < tasks.tasks.length; i++) {
     if(!tasks.tasks[i].completed)
     {
       code+=generateTaskHTML(tasks.tasks[i]);
@@ -836,8 +969,9 @@ function renderTasks()
     {
       completed+=generateTaskHTML(tasks.tasks[i]);
     }
+    }
   }
-  
+
   document.getElementById('tasks-container').innerHTML = code;
   document.getElementById('completed-tasks-container').innerHTML = completed;
 
@@ -1001,6 +1135,7 @@ function generateEventHTML(event)
 
   let code=`
   <div class="event" data-id="`+event.id+`">
+    <div class="event-head">
    <div class="title" onclick="toggleEventDetails('`+event.id+`')">`+event.title+`</div>
    <div class="event-options">`;
    if(event.dueDate)
@@ -1008,6 +1143,7 @@ function generateEventHTML(event)
     code+=`<span class="event-date">`+formatDate(event.dueDate)+`</span>`;
    }
   code+=`
+   </div>
    </div>
    <div class="event-details" style="display:none;">`;
 
@@ -1018,7 +1154,7 @@ function generateEventHTML(event)
 
    if(event.content)
    {
-    code+=`<div class="event-content">`+event.content+`</div>`;
+    code+=`<div class="event-content">`+markdownToHtml(event.content)+`</div>`;
    }
 
    if(event.dueDate)
@@ -1072,6 +1208,32 @@ function addEvent()
   }
 
   events.events.push(t);
+  events.events.sort(function(a, b) {
+    if(b.dueDate && a.dueDate)
+    {
+      if(b.dueDate == a.dueDate)
+      {
+        if(b.dueTime && a.dueTime)
+        {
+          return compareTime(a.dueTime, b.dueTime);
+        }
+        else if (!b.dueTime && a.dueTime)
+        {
+          return -1;
+        }
+        else if (b.dueTime && !a.dueTime)
+        {
+          return 1;
+        }
+      }
+      return a.dueDate.localeCompare(b.dueDate);
+    }
+    else
+    {
+      return 0;
+    }
+    
+    });
   events.mtime = new Date().getTime();
   showEvents();
   renderEvents();
@@ -1115,6 +1277,17 @@ function updateEvent()
   }
   
   overwriteEvent(id, t);
+  events.events.sort(function(a, b) {
+  if(b.dueDate && a.dueDate)
+  {
+    return b.dueDate - b.dueDate;
+  }
+  else
+  {
+    return 0;
+  }
+  
+  });
   events.mtime = new Date().getTime();
   showEvents();
   renderEvents();
@@ -1129,6 +1302,7 @@ function overwriteEvent(id, event)
     // console.log("Comparing "+id+" with "+ta)
     if(events.events[i].id == id)
     {
+      event.creationTime = events.events[i].creationTime;
       events.events[i] = event;
     }
   }
@@ -1204,7 +1378,12 @@ function parseToday()
 {
   tasksToday = [];
   eventsToday = [];
-  let todayDate = new Date().toISOString().substr(0,10);
+
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const day = String(currentDate.getDate()).padStart(2, '0');
+  const localeDateString = `${year}-${month}-${day}`;
+  let todayDate = localeDateString;
   
   for (var i = 0; i < tasks.tasks.length; i++) {
     if(tasks.tasks[i].dueDate == todayDate)
@@ -1228,10 +1407,16 @@ function renderToday(arg)
   
   let code=``;
 
+  let topPriorityTasks = getTopPriorityTasks(tasksToday);
+  let normalPriorityTasks = getNormalPriorityTasks(tasksToday);
+
   if(arg=='all')
   {
-    for (var i = 0; i < tasksToday.length; i++) {
-      code+=generateTaskHTML(tasksToday[i]);
+    for (var i = 0; i < topPriorityTasks.length; i++) {
+      code+=generateTaskHTML(topPriorityTasks[i]);
+    }
+    for (var i = 0; i < normalPriorityTasks.length; i++) {
+      code+=generateTaskHTML(normalPriorityTasks[i]);
     }
     for (var i = 0; i < eventsToday.length; i++) {
       code+=generateEventHTML(eventsToday[i]);
@@ -1239,8 +1424,11 @@ function renderToday(arg)
   }
   else if(arg=='tasks')
   {
-    for (var i = 0; i < tasksToday.length; i++) {
-      code+=generateTaskHTML(tasksToday[i]);
+    for (var i = 0; i < topPriorityTasks.length; i++) {
+      code+=generateTaskHTML(topPriorityTasks[i]);
+    }
+    for (var i = 0; i < normalPriorityTasks.length; i++) {
+      code+=generateTaskHTML(normalPriorityTasks[i]);
     }
   }
   else if(arg=='events')
@@ -1252,4 +1440,134 @@ function renderToday(arg)
 
   document.getElementById('today-container').innerHTML = code;
 
+}
+
+function mobileLoad(a)
+{
+  document.querySelectorAll(".column").forEach(function(e){
+    e.style.display = 'none';
+  });
+
+  if(a=='tasks')
+  {
+    document.getElementById('col-one').style.display='block';
+  }
+  if(a=='events')
+  {
+    document.getElementById('col-two').style.display='block';
+  }
+  if(a=='today')
+  {
+    document.getElementById('col-three').style.display='flex';
+  }
+}
+
+function markdownToHtml(markdown) {
+    return parseMarkdown(markdown);
+}
+
+
+/***   Regex Markdown Parser by chalarangelo   ***/
+// Replaces 'regex' with 'replacement' in 'str'
+// Curry function, usage: replaceRegex(regexVar, replacementVar) (strVar)
+const replaceRegex = function(regex, replacement){
+  return function(str){
+    return str.replace(regex, replacement);
+  }
+}
+// Regular expressions for Markdown (a bit strict, but they work)
+const codeBlockRegex = /((\n\t)(.*))+/g;
+const inlineCodeRegex = /(`)(.*?)\1/g;
+const imageRegex = /!\[([^\[]+)\]\(([^\)]+)\)/g;
+const linkRegex = /\[([^\[]+)\]\(([^\)]+)\)/g;
+const headingRegex = /\n(#+\s*)(.*)/g;
+const boldItalicsRegex = /(\*{1,2})(.*?)\1/g;
+const strikethroughRegex = /(\~\~)(.*?)\1/g;
+const blockquoteRegex = /\n(&gt;|\>)(.*)/g;
+const horizontalRuleRegex = /\n((\-{3,})|(={3,}))/g;
+const unorderedListRegex = /(\n\s*(\-|\+)\s.*)+/g;
+const orderedListRegex = /(\n\s*([0-9]+\.)\s.*)+/g;
+const paragraphRegex = /\n+(?!<pre>)(?!<h)(?!<ul>)(?!<blockquote)(?!<hr)(?!\t)([^\n]+)\n/g;
+// Replacer functions for Markdown
+const codeBlockReplacer = function(fullMatch){
+  return '\n<pre>' + fullMatch + '</pre>';
+}
+const inlineCodeReplacer = function(fullMatch, tagStart, tagContents){
+  return '<code>' + tagContents + '</code>';
+}
+const imageReplacer = function(fullMatch, tagTitle, tagURL){
+  return '<img src="' + tagURL + '" alt="' + tagTitle + '" />';
+}
+const linkReplacer = function(fullMatch, tagTitle, tagURL){
+  return '<a href="' + tagURL + '">' + tagTitle + '</a>';
+}
+const headingReplacer = function(fullMatch, tagStart, tagContents){
+  return '\n<h' + tagStart.trim().length + '>' + tagContents + '</h' + tagStart.trim().length + '>';
+}
+const boldItalicsReplacer = function(fullMatch, tagStart, tagContents){
+  return '<' + ( (tagStart.trim().length==1)?('em'):('strong') ) + '>'+ tagContents + '</' + ( (tagStart.trim().length==1)?('em'):('strong') ) + '>';
+}
+const strikethroughReplacer = function(fullMatch, tagStart, tagContents){
+  return '<del>' + tagContents + '</del>';
+}
+const blockquoteReplacer = function(fullMatch, tagStart, tagContents){
+  return '\n<blockquote>' + tagContents + '</blockquote>';
+}
+const horizontalRuleReplacer = function(fullMatch){
+  return '\n<hr />';
+}
+const unorderedListReplacer = function(fullMatch){
+  let items = '';
+  fullMatch.trim().split('\n').forEach( item => { items += '<li>' + item.substring(2) + '</li>'; } );
+  return '\n<ul>' + items + '</ul>';
+}
+const orderedListReplacer = function(fullMatch){
+  let items = '';
+  fullMatch.trim().split('\n').forEach( item => { items += '<li>' + item.substring(item.indexOf('.')+2) + '</li>'; } );
+  return '\n<ol>' + items + '</ol>';
+}
+const paragraphReplacer = function(fullMatch, tagContents){
+  return '<p>' + tagContents + '</p>';
+}
+// Rules for Markdown parsing (use in order of appearance for best results)
+const replaceCodeBlocks = replaceRegex(codeBlockRegex, codeBlockReplacer);
+const replaceInlineCodes = replaceRegex(inlineCodeRegex, inlineCodeReplacer);
+const replaceImages = replaceRegex(imageRegex, imageReplacer);
+const replaceLinks = replaceRegex(linkRegex, linkReplacer);
+const replaceHeadings = replaceRegex(headingRegex, headingReplacer);
+const replaceBoldItalics = replaceRegex(boldItalicsRegex, boldItalicsReplacer);
+const replaceceStrikethrough = replaceRegex(strikethroughRegex, strikethroughReplacer);
+const replaceBlockquotes = replaceRegex(blockquoteRegex, blockquoteReplacer);
+const replaceHorizontalRules = replaceRegex(horizontalRuleRegex, horizontalRuleReplacer);
+const replaceUnorderedLists = replaceRegex(unorderedListRegex, unorderedListReplacer);
+const replaceOrderedLists = replaceRegex(orderedListRegex, orderedListReplacer);
+const replaceParagraphs = replaceRegex(paragraphRegex, paragraphReplacer);
+// Fix for tab-indexed code blocks
+const codeBlockFixRegex = /\n(<pre>)((\n|.)*)(<\/pre>)/g;
+const codeBlockFixer = function(fullMatch, tagStart, tagContents, lastMatch, tagEnd){
+  let lines = '';
+  tagContents.split('\n').forEach( line => { lines += line.substring(1) + '\n'; } );
+  return tagStart + lines + tagEnd;
+}
+const fixCodeBlocks = replaceRegex(codeBlockFixRegex, codeBlockFixer);
+// Replacement rule order function for Markdown
+// Do not use as-is, prefer parseMarkdown as seen below
+const replaceMarkdown = function(str) {
+  return replaceParagraphs(replaceOrderedLists(replaceUnorderedLists(
+    replaceHorizontalRules(replaceBlockquotes(replaceceStrikethrough(
+      replaceBoldItalics(replaceHeadings(replaceLinks(replaceImages(
+        replaceInlineCodes(replaceCodeBlocks(str))
+      ))))
+    )))
+  )));
+}
+// Parser for Markdown (fixes code, adds empty lines around for parsing)
+// Usage: parseMarkdown(strVar)
+const parseMarkdown = function(str) {
+  return fixCodeBlocks(replaceMarkdown('\n' + str + '\n')).trim();
+}
+
+function textAreaAdjust(element) {
+  element.style.height = "1px";
+  element.style.height = (25+element.scrollHeight)+"px";
 }

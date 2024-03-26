@@ -32,12 +32,12 @@ html
     box-sizing: border-box;
   }
 
-*::-webkit-scrollbar {
+::-webkit-scrollbar {
   display: none;
 }
 
-/* Add a thumb */
-*::-webkit-scrollbar-thumb {
+
+::-webkit-scrollbar-thumb {
   display: none;
 }
   
@@ -87,6 +87,11 @@ html
     background: #ccc ;
   }
 
+  #app-username
+  {
+    opacity: 0.7;
+  }
+
   span.button
   {
      cursor: pointer;
@@ -109,13 +114,24 @@ html
 
   
   .calendar {
-    width: 100%;
+    width: calc(100% + 40px);
     border-collapse: collapse;
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-bottom: -20px;
   }
 
   .calendar tr:no-child
   {
     display: none;
+  }
+
+  .calendar tr:last-child td {
+    border-bottom: none;
+  }
+
+  .calendar td:first-child {
+      border-left: none;
   }
 
    .calendar td.day-0, .calendar td.day-6
@@ -171,6 +187,21 @@ html
   border-radius: 0.2rem;
   font-family: inherit;
  }
+
+ /* Hide scrollbar track */
+textarea::-webkit-scrollbar-track {
+  display: none;
+}
+
+textarea::-webkit-scrollbar {
+  display: block;
+  width: 4px;
+}
+/* Show scrollbar thumb */
+textarea::-webkit-scrollbar-thumb {
+  display: block;
+  background-color: #0002; /* You can customize the color */
+}
 
  input[type="text"],input[type="date"],input[type="time"], input[type="number"], textarea
  {
@@ -237,18 +268,18 @@ html
   position: relative;
  }
 
+.task-head, .event-head
+{
+  display: flex;
+}
 
 .task-options, .event-options
 {
-  width: 150px;
-  position: absolute;
-  top:0px;
-  right: 0px;
   padding: 10px;
-  text-align: right;
+  text-wrap:nowrap;
 }
 
-.task .priority
+.task .priority, .task-options .task-date
 {
   font-size: 11px;
   opacity: 0.7;
@@ -262,9 +293,17 @@ html
   text-transform: uppercase;
 }
 
+/*.task .priority
+{
+  cursor: pointer;
+  filter: grayscale();
+  font-size: 14px;
+}*/
+
 .task .title, .event .title
 {
   cursor: pointer;
+  flex-grow: 1;
 }
 
 .event-options .event-date
@@ -298,6 +337,7 @@ html
 { flex-grow: 1;
   height: 0px;
   overflow-y: scroll;
+  margin-bottom: 10px;
 }
 
 .task-options-dropdown
@@ -312,7 +352,6 @@ html
 .task .title, .event .title
 {
   padding: 10px;
-  padding-right: 120px;
 }
 .dropdown-option
 {
@@ -348,6 +387,11 @@ html
   margin-top:10px;
 }
 
+.task-content>*:first-child, .event-content>*:first-child
+{
+  margin-top: 0px;
+}
+
 .task-date, .task-time,
 .event-date, .event-time
 {
@@ -376,11 +420,18 @@ html
 .app-bar-top
 {
    border-bottom:1px solid var(--border);
+   display: none;
+}
+
+.app-bar-top>div
+{
+  cursor: pointer;
 }
 
 .rotate {
   animation: rotateAnimation 2s linear infinite;
 }
+
 
 @keyframes rotateAnimation {
   from {
@@ -405,4 +456,27 @@ html
 #today-container>div:first-child
 {
   margin-top:0px;
+}
+
+@media screen and (max-width:600px)
+{
+
+  .app-bar-top
+  {
+    display: flex;
+  }
+
+  #col-two, #col-three
+  {
+    display: none;
+  }
+
+  .column
+  {
+    width: 100%;
+    min-width: unset;
+    border-right: none;
+  }
+
+
 }
