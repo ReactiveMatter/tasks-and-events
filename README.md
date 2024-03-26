@@ -1,6 +1,8 @@
 # Tasks and events
 
-This is a personal dashboard for managing tasks and events. It is a very simple app with tasks, events, and calender in one screen. This app was created to serve as a dashboard for work.
+This is a personal dashboard for managing tasks and events. It is a very simple app with tasks, events, and calender in one screen. This app was created to serve as a dashboard for work. 
+
+[Live demo](https://reactivematter.github.io/tasks-and-events/)
 
 ![screenshot](screenshot.png)
 
