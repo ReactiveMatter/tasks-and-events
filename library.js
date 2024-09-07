@@ -8,6 +8,7 @@
       this.topPriority = false;
       this.dueDate;
       this.dueTime;
+      this.tags;
       this.creationTime = new Date().getTime();
       this.completionPercent;
       this.completed = false; // false = pending, true = completed
@@ -24,6 +25,7 @@
       this.venue;
       this.dueDate;
       this.dueTime;
+      this.tags;
       this.creationTime = new Date().getTime();;
     }
   }
@@ -61,6 +63,11 @@ var localstorage_prefix = 'app_';
 var error = null;
 var todayFilter = 'all';
 var sortTasks = 'none';
+var filterTasks = 'all';
+var filterEvents = 'all';
+var settingGroupTasks = false;
+var tasksTags = [];
+var eventsTags = [];
 var tasksToday = [];
 var eventsToday= [];
 
@@ -75,6 +82,18 @@ document.addEventListener("DOMContentLoaded", (event) => {
     sortTasks = document.getElementById('sort-tasks').value;
     localStorage.setItem(localstorage_prefix+'sort', sortTasks);
     renderTasks();
+  });
+
+    document.getElementById('filter-tasks').addEventListener("change", function(){
+    filterTasks = document.getElementById('filter-tasks').value;
+    localStorage.setItem(localstorage_prefix+'filter-tasks', filterTasks);
+    renderTasks();
+  });
+
+    document.getElementById('filter-events').addEventListener("change", function(){
+    filterEvents = document.getElementById('filter-events').value;
+    localStorage.setItem(localstorage_prefix+'filter-events', filterEvents);
+    renderEvents();
   });
 
 });
@@ -128,6 +147,18 @@ function initialize()
     document.getElementById('sort-tasks').value = sortTasks;
   }
 
+  let tf = localStorage.getItem(localstorage_prefix+'filter-tasks');
+  if(tf)
+  {
+    filterTasks = tf;
+  }
+
+  let ef = localStorage.getItem(localstorage_prefix+'filter-events');
+  if(ef)
+  {
+    filterEvents = ef;
+  }
+
   if(conf.username)
   {
     document.getElementById('app-username').innerHTML=conf.username;
@@ -138,12 +169,14 @@ function initialize()
   }
   
 
+  loadTheme();
   renderTasks();
   renderEvents();
   parseToday();
   renderToday('all');
   today();
-
+  updateTasksTagsInUI();
+  updateEventsTagsInUI();
 }
 
 function insertHTML(id, code)
@@ -423,10 +456,13 @@ function toggleTheme()
   }
   else
   {
-    conf.theme = 'dark';
+    conf.theme = 'light';
     document.querySelector('body').classList.remove('dark');
     document.querySelector('body').classList.add('light');
   }
+
+  saveToLocalByFile('conf');
+
 }
 
 //Data storage code
@@ -629,6 +665,8 @@ function showTasks()
     e.style.display = "none";
   })
   document.getElementById('module-tasks').style.display = "block";
+
+  clearTaskForms();
 }
 
 function addTaskOpen()
@@ -648,14 +686,19 @@ function editTaskOpen(id)
 
   t = getTask(id);
 
-  if(!t.content)
+  if(t.content)
   {
-    t.content='';
+    document.getElementById('form-task-edit-content').value = t.content;
+  }
+
+  if(t.tags)
+  {
+    document.getElementById('form-task-edit-tags').value = t.tags;
   }
 
   document.getElementById('form-task-edit-id').value = id;
   document.getElementById('form-task-edit-title').value = t.title;
-  document.getElementById('form-task-edit-content').value = t.content;
+  
   document.getElementById('form-task-edit-date').value = t.dueDate;
   document.getElementById('form-task-edit-time').value = t.dueTime;
   document.getElementById('form-task-edit-priority').checked = t.topPriority;
@@ -669,8 +712,35 @@ function toggleTaskDetails(id) {
   toggle("div[data-id='"+id+"'] .task-details")
 }
 
+function isTagsContain(tag, tagsString)
+{
+        if(!tagsString) { return false;}
+
+        let tags = tagsString.split(",");
+        let tagContains = false;
+        tags.forEach(function(e){
+          if(e.trim() == tag)
+          {  
+            tagContains = true;
+          }
+        });
+
+        if(tagContains){ return true;}
+        else {return false; }
+
+        
+}
+
 function generateTaskHTML(task)
 {
+
+  if(filterTasks!='all')
+  {
+    if(!isTagsContain(filterTasks,task.tags))
+    {
+      return '';
+    }
+  }
 
   let code=`
   <div class="task" data-id="`+task.id+`">
@@ -697,6 +767,11 @@ function generateTaskHTML(task)
    if(task.content)
    {
     code+=`<div class="task-content">`+markdownToHtml(task.content)+`</div>`;
+   }
+
+   if(task.tags)
+   {
+    code+=`<div class="task-tags">Tags: `+task.tags+`</div>`;
    }
 
    if(task.dueDate)
@@ -740,6 +815,11 @@ function addTask()
   {
     t.content = content;
   }
+  let tags = document.getElementById('form-task-tags').value.trim();
+  if(tags != '')
+  {
+    t.tags = tags.toLowerCase();
+  }
   let dueDate = document.getElementById('form-task-date').value.trim();
   if(dueDate != '')
   {
@@ -765,7 +845,8 @@ function addTask()
   renderTasks();
   renderToday(todayFilter);
   saveToLocalByFile('tasks');
-  clearAddTaskForm();
+  clearTaskForms();
+  updateTasksTagsInUI();
 }
 
 function updateTask()
@@ -785,6 +866,11 @@ function updateTask()
   if(content != '')
   {
     t.content = content;
+  }
+  let tags = document.getElementById('form-task-edit-tags').value.trim();
+  if(tags != '')
+  {
+    t.tags = tags.toLowerCase();
   }
   let dueDate = document.getElementById('form-task-edit-date').value.trim();
   if(dueDate != '')
@@ -812,7 +898,8 @@ function updateTask()
   renderTasks();
   renderToday(todayFilter);
   saveToLocalByFile('tasks');
-  clearAddTaskForm();
+  clearTaskForms();
+  updateTasksTagsInUI();
 }
 
 function overwriteTask(id, task)
@@ -917,13 +1004,14 @@ function renderTasks()
   let code = ``;
   let completed = ``;
   let t = Array.from(tasks.tasks);
+  let tagsCode = [];
 
   if(sortTasks=='date')
   {   
     let dueDateSortedTasks = sortTasksByDate(t);
      for (var i = 0; i < dueDateSortedTasks.length; i++) {
     if(!dueDateSortedTasks[i].completed)
-    {
+    { 
       code+=generateTaskHTML(dueDateSortedTasks[i]);
     }
     else
@@ -977,7 +1065,7 @@ function renderTasks()
 
 }
 
-function clearAddTaskForm()
+function clearTaskForms()
 {
   document.querySelectorAll("#module-add-tasks input, #module-add-tasks textarea").forEach(function(e){
     e.value ='';
@@ -986,6 +1074,15 @@ function clearAddTaskForm()
   document.querySelectorAll("#module-add-tasks input[type=checkbox]").forEach(function(e){
     e.checked = false;
   });
+
+    document.querySelectorAll("#module-edit-tasks input, #module-edit-tasks textarea").forEach(function(e){
+    e.value ='';
+  });
+
+  document.querySelectorAll("#module-edit-tasks input[type=checkbox]").forEach(function(e){
+    e.checked = false;
+  });
+
 }
 
 function deleteCompletedTasks()
@@ -1078,6 +1175,7 @@ function savePassword()
   }
   saveToLocalByFile('conf');
   closeDialog('password-dialog');
+  sync();
 }
 
 /* For events */
@@ -1087,6 +1185,8 @@ function showEvents()
     e.style.display = "none";
   })
   document.getElementById('module-events').style.display = "block";
+
+  clearEventForms();
 }
 
 function addEventOpen()
@@ -1106,20 +1206,24 @@ function editEventOpen(id)
 
   t = getEvent(id);
 
-  if(!t.content)
+  if(t.content)
   {
-    t.content='';
+    document.getElementById('form-event-edit-content').value = t.content;
   }
 
-  if(!t.venue)
+  if(t.venue)
   {
-    t.venue='';
+    document.getElementById('form-event-edit-venue').value = t.venue;
   }
+
+  if(t.tags)
+  {
+    document.getElementById('form-event-edit-tags').value = t.tags;
+  }
+
 
   document.getElementById('form-event-edit-id').value = id;
-  document.getElementById('form-event-edit-title').value = t.title;
-  document.getElementById('form-event-edit-content').value = t.content;
-  document.getElementById('form-event-edit-venue').value = t.venue;
+  document.getElementById('form-event-edit-title').value = t.title;  
   document.getElementById('form-event-edit-date').value = t.dueDate;
   document.getElementById('form-event-edit-time').value = t.dueTime;
 
@@ -1132,6 +1236,14 @@ function toggleEventDetails(id) {
 
 function generateEventHTML(event)
 {
+
+  if(filterEvents!='all')
+  {
+    if(!isTagsContain(filterEvents,event.tags))
+        {
+          return '';
+        }
+  }
 
   let code=`
   <div class="event" data-id="`+event.id+`">
@@ -1155,6 +1267,11 @@ function generateEventHTML(event)
    if(event.content)
    {
     code+=`<div class="event-content">`+markdownToHtml(event.content)+`</div>`;
+   }
+
+   if(event.tags)
+   {
+    code+=`<div class="event-tags">Tags: `+event.tags+`</div>`;
    }
 
    if(event.dueDate)
@@ -1195,6 +1312,11 @@ function addEvent()
   if(content != '')
   {
     t.content = content;
+  }
+  let tags = document.getElementById('form-event-tags').value.trim();
+  if(tags != '')
+  {
+    t.tags = tags.toLowerCase();
   }
   let dueDate = document.getElementById('form-event-date').value.trim();
   if(dueDate != '')
@@ -1239,7 +1361,8 @@ function addEvent()
   renderEvents();
   renderToday(todayFilter);
   saveToLocalByFile('events');
-  clearAddEventForm();
+  clearEventForms();
+  updateEventsTagsInUI();
 }
 
 function updateEvent()
@@ -1265,6 +1388,11 @@ function updateEvent()
   {
     t.content = content;
   }
+  let tags = document.getElementById('form-event-edit-tags').value.trim();
+  if(tags != '')
+  {
+    t.tags = tags.toLowerCase();
+  }
   let dueDate = document.getElementById('form-event-edit-date').value.trim();
   if(dueDate != '')
   {
@@ -1278,22 +1406,38 @@ function updateEvent()
   
   overwriteEvent(id, t);
   events.events.sort(function(a, b) {
-  if(b.dueDate && a.dueDate)
-  {
-    return b.dueDate - b.dueDate;
-  }
-  else
-  {
-    return 0;
-  }
-  
-  });
+    if(b.dueDate && a.dueDate)
+    {
+      if(b.dueDate == a.dueDate)
+      {
+        if(b.dueTime && a.dueTime)
+        {
+          return compareTime(a.dueTime, b.dueTime);
+        }
+        else if (!b.dueTime && a.dueTime)
+        {
+          return -1;
+        }
+        else if (b.dueTime && !a.dueTime)
+        {
+          return 1;
+        }
+      }
+      return a.dueDate.localeCompare(b.dueDate);
+    }
+    else
+    {
+      return 0;
+    }
+    
+    });
   events.mtime = new Date().getTime();
   showEvents();
   renderEvents();
   renderToday(todayFilter);
   saveToLocalByFile('events');
-  clearAddEventForm();
+  clearEventForms();
+  updateEventsTagsInUI();
 }
 
 function overwriteEvent(id, event)
@@ -1345,13 +1489,21 @@ function renderEvents()
   document.getElementById('completed-events-container').innerHTML = completed;
 }
 
-function clearAddEventForm()
+function clearEventForms()
 {
   document.querySelectorAll("#module-add-events input, #module-add-events textarea").forEach(function(e){
     e.value ='';
   });
 
   document.querySelectorAll("#module-add-events input[type=checkbox]").forEach(function(e){
+    e.checked = false;
+  });
+
+  document.querySelectorAll("#module-edit-events input, #module-edit-events textarea").forEach(function(e){
+    e.value ='';
+  });
+
+  document.querySelectorAll("#module-edit-events input[type=checkbox]").forEach(function(e){
     e.checked = false;
   });
 }
@@ -1463,111 +1615,84 @@ function mobileLoad(a)
 }
 
 function markdownToHtml(markdown) {
-    return parseMarkdown(markdown);
-}
 
-
-/***   Regex Markdown Parser by chalarangelo   ***/
-// Replaces 'regex' with 'replacement' in 'str'
-// Curry function, usage: replaceRegex(regexVar, replacementVar) (strVar)
-const replaceRegex = function(regex, replacement){
-  return function(str){
-    return str.replace(regex, replacement);
-  }
-}
-// Regular expressions for Markdown (a bit strict, but they work)
-const codeBlockRegex = /((\n\t)(.*))+/g;
-const inlineCodeRegex = /(`)(.*?)\1/g;
-const imageRegex = /!\[([^\[]+)\]\(([^\)]+)\)/g;
-const linkRegex = /\[([^\[]+)\]\(([^\)]+)\)/g;
-const headingRegex = /\n(#+\s*)(.*)/g;
-const boldItalicsRegex = /(\*{1,2})(.*?)\1/g;
-const strikethroughRegex = /(\~\~)(.*?)\1/g;
-const blockquoteRegex = /\n(&gt;|\>)(.*)/g;
-const horizontalRuleRegex = /\n((\-{3,})|(={3,}))/g;
-const unorderedListRegex = /(\n\s*(\-|\+)\s.*)+/g;
-const orderedListRegex = /(\n\s*([0-9]+\.)\s.*)+/g;
-const paragraphRegex = /\n+(?!<pre>)(?!<h)(?!<ul>)(?!<blockquote)(?!<hr)(?!\t)([^\n]+)\n/g;
-// Replacer functions for Markdown
-const codeBlockReplacer = function(fullMatch){
-  return '\n<pre>' + fullMatch + '</pre>';
-}
-const inlineCodeReplacer = function(fullMatch, tagStart, tagContents){
-  return '<code>' + tagContents + '</code>';
-}
-const imageReplacer = function(fullMatch, tagTitle, tagURL){
-  return '<img src="' + tagURL + '" alt="' + tagTitle + '" />';
-}
-const linkReplacer = function(fullMatch, tagTitle, tagURL){
-  return '<a href="' + tagURL + '">' + tagTitle + '</a>';
-}
-const headingReplacer = function(fullMatch, tagStart, tagContents){
-  return '\n<h' + tagStart.trim().length + '>' + tagContents + '</h' + tagStart.trim().length + '>';
-}
-const boldItalicsReplacer = function(fullMatch, tagStart, tagContents){
-  return '<' + ( (tagStart.trim().length==1)?('em'):('strong') ) + '>'+ tagContents + '</' + ( (tagStart.trim().length==1)?('em'):('strong') ) + '>';
-}
-const strikethroughReplacer = function(fullMatch, tagStart, tagContents){
-  return '<del>' + tagContents + '</del>';
-}
-const blockquoteReplacer = function(fullMatch, tagStart, tagContents){
-  return '\n<blockquote>' + tagContents + '</blockquote>';
-}
-const horizontalRuleReplacer = function(fullMatch){
-  return '\n<hr />';
-}
-const unorderedListReplacer = function(fullMatch){
-  let items = '';
-  fullMatch.trim().split('\n').forEach( item => { items += '<li>' + item.substring(2) + '</li>'; } );
-  return '\n<ul>' + items + '</ul>';
-}
-const orderedListReplacer = function(fullMatch){
-  let items = '';
-  fullMatch.trim().split('\n').forEach( item => { items += '<li>' + item.substring(item.indexOf('.')+2) + '</li>'; } );
-  return '\n<ol>' + items + '</ol>';
-}
-const paragraphReplacer = function(fullMatch, tagContents){
-  return '<p>' + tagContents + '</p>';
-}
-// Rules for Markdown parsing (use in order of appearance for best results)
-const replaceCodeBlocks = replaceRegex(codeBlockRegex, codeBlockReplacer);
-const replaceInlineCodes = replaceRegex(inlineCodeRegex, inlineCodeReplacer);
-const replaceImages = replaceRegex(imageRegex, imageReplacer);
-const replaceLinks = replaceRegex(linkRegex, linkReplacer);
-const replaceHeadings = replaceRegex(headingRegex, headingReplacer);
-const replaceBoldItalics = replaceRegex(boldItalicsRegex, boldItalicsReplacer);
-const replaceceStrikethrough = replaceRegex(strikethroughRegex, strikethroughReplacer);
-const replaceBlockquotes = replaceRegex(blockquoteRegex, blockquoteReplacer);
-const replaceHorizontalRules = replaceRegex(horizontalRuleRegex, horizontalRuleReplacer);
-const replaceUnorderedLists = replaceRegex(unorderedListRegex, unorderedListReplacer);
-const replaceOrderedLists = replaceRegex(orderedListRegex, orderedListReplacer);
-const replaceParagraphs = replaceRegex(paragraphRegex, paragraphReplacer);
-// Fix for tab-indexed code blocks
-const codeBlockFixRegex = /\n(<pre>)((\n|.)*)(<\/pre>)/g;
-const codeBlockFixer = function(fullMatch, tagStart, tagContents, lastMatch, tagEnd){
-  let lines = '';
-  tagContents.split('\n').forEach( line => { lines += line.substring(1) + '\n'; } );
-  return tagStart + lines + tagEnd;
-}
-const fixCodeBlocks = replaceRegex(codeBlockFixRegex, codeBlockFixer);
-// Replacement rule order function for Markdown
-// Do not use as-is, prefer parseMarkdown as seen below
-const replaceMarkdown = function(str) {
-  return replaceParagraphs(replaceOrderedLists(replaceUnorderedLists(
-    replaceHorizontalRules(replaceBlockquotes(replaceceStrikethrough(
-      replaceBoldItalics(replaceHeadings(replaceLinks(replaceImages(
-        replaceInlineCodes(replaceCodeBlocks(str))
-      ))))
-    )))
-  )));
-}
-// Parser for Markdown (fixes code, adds empty lines around for parsing)
-// Usage: parseMarkdown(strVar)
-const parseMarkdown = function(str) {
-  return fixCodeBlocks(replaceMarkdown('\n' + str + '\n')).trim();
+   return marked.parse(markdown);
+    
 }
 
 function textAreaAdjust(element) {
   element.style.height = "1px";
   element.style.height = (25+element.scrollHeight)+"px";
+}
+
+function updateTasksTagsInUI()
+{
+ let tags = [];
+ for (var i = 0; i < tasks.tasks.length; i++) {
+  if(tasks.tasks[i].tags)
+  {
+
+   tasks.tasks[i].tags.split(",").forEach(function(e){
+    tags.push(e.trim());  
+   });
+  }
+ }
+
+  tags = removeDuplicates(tags);
+  tasksHTML = ``;
+  tasksHTML += `<option value="all"'>Filter</option>`;
+  tags.sort();
+  tags.forEach(function(e){
+    tasksHTML += `<option value="`+e+`"'>`+e+`</option>`;
+  });
+
+  tasksTags = tags;
+  document.getElementById('filter-tasks').innerHTML = tasksHTML;
+  document.getElementById('filter-tasks').value = filterTasks;
+
+}
+
+function updateEventsTagsInUI()
+{
+ let tags = [];
+ for (var i = 0; i < events.events.length; i++) {
+  if(events.events[i].tags)
+  {
+
+   events.events[i].tags.split(",").forEach(function(e){
+    tags.push(e.trim());  
+   });
+  }
+ }
+
+  tags = removeDuplicates(tags);
+  eventsHTML = ``;
+  eventsHTML += `<option value="all"'>Filter</option>`;
+  tags.sort();
+  tags.forEach(function(e){
+    eventsHTML += `<option value="`+e+`"'>`+e+`</option>`;
+  });
+
+  //Store tags in global variable
+  eventsTags = tags;
+  document.getElementById('filter-events').innerHTML = eventsHTML;
+  document.getElementById('filter-events').value = filterEvents;
+}
+
+function removeDuplicates(a)
+{
+  return Array.from(new Set(a));
+}
+
+function logout()
+{
+  for(var i=0;i<localStorage.length;i++)
+  {
+    if(localStorage.key(i).startsWith(localstorage_prefix))
+    {
+      localStorage.removeItem(localStorage.key(i));
+    }
+  }
+
+  location.reload()
 }

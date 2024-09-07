@@ -40,12 +40,17 @@ html
 ::-webkit-scrollbar-thumb {
   display: none;
 }
+
+ol, ul 
+{
+  padding-inline-start: 2em;
+}
   
   .container {
     flex-grow: 1;
     width: 100% !important;
     display: flex;
-    height: 100%;
+    overflow: scroll;
   }
 
 .column
@@ -255,7 +260,10 @@ textarea::-webkit-scrollbar-thumb {
  {
   font-size: 24px;
   margin: 0;
+  margin-right: 10px;
  }
+
+
 
 
  .task, .event
@@ -392,6 +400,16 @@ textarea::-webkit-scrollbar-thumb {
   margin-top: 0px;
 }
 
+.task-content h1, .event-content>*:first-child h1
+{
+  font-size: 1.2em;
+}
+
+.task-content h2, .event-content>*:first-child h2
+{
+  font-size: 1em;
+}
+
 .task-date, .task-time,
 .event-date, .event-time
 {
@@ -479,4 +497,54 @@ textarea::-webkit-scrollbar-thumb {
   }
 
 
+}
+
+
+/*For dark theme */
+
+
+body.dark{
+  background: #23303e;
+  color: #66d2d8;
+  --border: #98aeb477;
+  --dialog-heading-background: #263d59;
+  --dialog-border: #98aeb477;
+  --object-background: #263d59;
+  --highlight-background: #eee5;
+  --weekend-background: #eee1;
+  --today-background: #98aeb477;
+}
+
+body.dark button, body.dark select {
+    border: 1px solid var(--border);
+    background: var(--object-background);
+    color: var(--color);
+}
+
+body.dark input, body.dark textarea, body.dark select {
+
+  background: var(--object-background);
+  border-color: var(--border);
+  color:var(--color);
+}
+
+body.dark .task-content a 
+{
+  color:#ddd;
+}
+
+body.dark table td 
+{
+  border-color: #98aeb477;
+}
+
+body.dark img.icon
+{
+  filter: invert(1);
+}
+
+body.dark dialog
+{
+  color: var(--color);
+  background-color: #23303e;
 }

@@ -20,16 +20,22 @@
   <div class="module-header">
   <h1 class="header">Tasks</h1>
   <div>
-      <!-- <button onclick="showCompletedTasks()" class='selected'>Completed</button> -->
-      <label for='sort-tasks'style="font-size: 13px;">Sort</label>
+      
+      <!-- <label for='sort-tasks'style="font-size: 13px;">Sort</label> -->
       <select name="sort-tasks" id="sort-tasks" style="padding:3px 5px;">
-      <option value="None">None</option>
+      <option value="None">Sort</option>
       <option value="priority">Priority</option>
       <option value="date">Date</option>
       </select>
+      <!-- <label for='filter-tasks'style="font-size: 13px;">Filter</label> -->
+      <select name="filter-tasks" id="filter-tasks" style="padding:3px 5px;">
+      <option value="all">Filter</option>
+      </select>
       <button onclick="addTaskOpen()">Add</button>
   </div>
-  </div>    
+  </div>
+    <div id="tasks-tags-container">
+    </div>
     <div id="tasks-container">
     </div>
 </div>
@@ -54,6 +60,8 @@
   <input type="text" name="form-task-title" id="form-task-title" autocomplete="off"></input>
   <label for="form-task-content">Content</label>
   <textarea name="form-task-content" id="form-task-content"></textarea>
+  <label for="form-task-tags">Tags (comma sperated)</label>
+  <input type="text" name="form-task-tags" id="form-task-tags" autocomplete="off"></input>
   <input type="checkbox" name="form-task-priority" id="form-task-priority"></input>
   <label for="form-task-prority">Top priority</label>
   <div style="height:10px"></div>
@@ -78,6 +86,8 @@
   <input type="text" name="form-task-edit-title" id="form-task-edit-title" autocomplete="off"></input>
   <label for="form-task-edit-content">Content</label>
   <textarea name="form-task-edit-content" id="form-task-edit-content"></textarea>
+  <label for="form-task-edit-tags">Tags (comma sperated)</label>
+  <input type="text" name="form-task-edit-tags" id="form-task-edit-tags" autocomplete="off"></input>
   <input type="checkbox" name="form-task-edit-priority" id="form-task-edit-priority"></input>
   <label for="form-task-edit-prority">Top priority</label>
   <div style="height:10px"></div>
@@ -92,12 +102,17 @@
   <div style="height:10px"></div>
   <button onclick="updateTask()">Update</button>
 </div>
+
 </div>
 <div id="col-two" class="column">
   <div id="module-events" class="module">
   <div class="module-header">
   <h1 class="header">Events</h1>
   <div>
+      <!-- <label for='filter-events'style="font-size: 13px;">Filter</label> -->
+      <select name="filter-events" id="filter-events" style="padding:3px 5px;">
+      <option value="all">All</option>
+      </select>
         <button onclick="addEventOpen()">Add</button>
   </div>
   </div>
@@ -115,6 +130,8 @@
   <input type="text" name="form-event-venue" id="form-event-venue"></input>
   <label for="form-event-content">Content</label>
   <textarea name="form-event-content" id="form-event-content"></textarea>
+  <label for="form-event-tags">Tags (comma sperated)</label>
+  <input type="text" name="form-event-tags" id="form-event-tags" autocomplete="off"></input>
   <div style="height:10px"></div>
   <label for="form-event-date">Date</label>
   <input type="date" name="form-event-date" id="form-event-date"></input>
@@ -135,6 +152,8 @@
   <input type="text" name="form-event-edit-venue" id="form-event-edit-venue"></input>
   <label for="form-event-edit-content">Content</label>
   <textarea name="form-event-edit-content" id="form-event-edit-content"></textarea>
+  <label for="form-event-edit-tags">Tags (comma sperated)</label>
+  <input type="text" name="form-event-edit-tags" id="form-event-edit-tags" autocomplete="off"></input>
   <div style="height:10px"></div>
   <label for="form-event-edit-date">Date</label>
   <input type="date" name="form-event-edit-date" id="form-event-edit-date"></input>
@@ -207,6 +226,7 @@
 <span class="button" onclick="toggleCompleted()">Completed</span>
 <span class="button" onclick="openSettings()">Settings</span>
 <span class="button" onclick="openPassword()">Password</span>
+<span class="button" onclick="toggleTheme()">Toggle theme</span>
 </div>
 <div class="bar-section">
 <span id="app-username"></span>
@@ -231,9 +251,11 @@ Password
 </div>
 <div class="dialog-content">
   <input type="text" name="password" id="password" autocomplete="off"></input>
-  <button onclick="savePassword()">Save</button>
+  <button onclick="savePassword()">Save</button> 
+  <button onclick="logout()">Log out</button>
 </div>
 </dialog>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js" integrity="sha512-pSeTnZAQF/RHxb0ysMoYQI/BRZsa5XuklcrgFfU3YZIdnD3LvkkqzrIeHxzFi6gKtI8Cpq2DEWdZjMTcNVhUYA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script type="text/javascript" src="library.js">
   </script>
 </body>

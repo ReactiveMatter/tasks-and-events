@@ -4,7 +4,7 @@
 header('Content-Type: application/json');
 
 // Define password for authentication (you may want to change this)
-$password = 'your-token-which-will-be-used-in-frontend';
+$password = 'Your-password';
 
 /* Error codes
 0 - authentication failed;

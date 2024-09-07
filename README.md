@@ -4,6 +4,11 @@ This is a personal dashboard for managing tasks and events. It is a very simple 
 
 ![screenshot](screenshot.png)
 
+## Features
+1. Single page dashboard with calender
+2. Categorize tasks and events with tags.
+3. Local first with optional server backend.
+
 ## The backend
 
 The api.php is a single file backend which syncs the content in json format to server if the password (i.e. token) in the file matches the password used by the user in the frontend.
